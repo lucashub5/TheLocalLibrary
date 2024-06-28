@@ -14,47 +14,38 @@ const app = express();
 
 // Set up mongoose connection
 const mongoose = require("mongoose");
-mongoose.set("strictQuery", false);
-
 require('dotenv').config();
 const mongoDB = process.env.MONGODB_URI;
 
-main().catch((err) => console.log(err));
+main().catch(err => console.error('MongoDB connection error:', err));
+
 async function main() {
   await mongoose.connect(mongoDB);
+  console.log('MongoDB connected');
 }
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
+app.use(express.static(path.join(__dirname, 'public')));
 
+// Middlewares
 app.use(compression()); // Compress all routes
 
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      "script-src": ["'self'", "code.jquery.com", "cdn.jsdelivr.net"],
-    },
-  }),
-);
-
-const RateLimit = require("express-rate-limit");
-const limiter = RateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 20,
-});
-// Apply rate limiter to all requests
-app.use(limiter);
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    "script-src": ["'self'", "code.jquery.com", "cdn.jsdelivr.net"],
+  },
+}));
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-app.use("/catalog", catalogRouter);
+app.use('/catalog', catalogRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
